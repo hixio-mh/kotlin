@@ -3,21 +3,21 @@
 fun test() {
     do {
         val s: String
-        s = ""
+        <!VAL_REASSIGNMENT!>s<!> = ""
     } while (s == "")
 }
 
 fun test2() {
     do {
         val s: String
-        s = "1"
-        s = s + "2"
+        <!VAL_REASSIGNMENT!>s<!> = "1"
+        <!VAL_REASSIGNMENT!>s<!> = s + "2"
     } while (s == "1")
 }
 
 fun test3() {
     val s: String
     do {
-        s = ""
+        <!VAL_REASSIGNMENT!>s<!> = ""
     } while (s != "")
 }

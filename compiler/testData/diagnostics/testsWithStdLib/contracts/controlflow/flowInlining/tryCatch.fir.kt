@@ -25,7 +25,7 @@ fun tryCatchInlined() {
             <!UNINITIALIZED_VARIABLE!>x<!>.inc()
         }
     }
-    x = 42
+    <!VAL_REASSIGNMENT!>x<!> = 42
     x.inc()
 }
 

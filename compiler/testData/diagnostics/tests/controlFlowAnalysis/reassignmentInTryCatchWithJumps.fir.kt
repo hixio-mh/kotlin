@@ -23,14 +23,14 @@ fun f2(flag: Boolean) {
         val n: Int
         try {
             if (flag) {
-                n = 1
+                <!VAL_REASSIGNMENT!>n<!> = 1
                 exc(flag)
                 break
             }
         }
         catch (e: Exception) {
             // KT-13612: reassignment
-            n = 3
+            <!VAL_REASSIGNMENT!>n<!> = 3
         }
         <!UNINITIALIZED_VARIABLE!>n<!>.hashCode()
     }
@@ -41,14 +41,14 @@ fun f3(flag: Boolean) {
         val n: Int
         try {
             if (flag) {
-                n = 1
+                <!VAL_REASSIGNMENT!>n<!> = 1
                 exc(flag)
                 continue
             }
         }
         catch (e: Exception) {
             // KT-13612: reassignment
-            n = 3
+            <!VAL_REASSIGNMENT!>n<!> = 3
         }
         <!UNINITIALIZED_VARIABLE!>n<!>.hashCode()
     }

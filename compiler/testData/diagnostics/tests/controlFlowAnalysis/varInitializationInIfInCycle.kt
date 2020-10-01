@@ -3,10 +3,10 @@ fun foo(numbers: Collection<Int>) {
     for (i in numbers) {
         val b: Boolean
         if (1 < 2) {
-            b = false
+            <!VAL_REASSIGNMENT!>b<!> = false
         }
         else {
-            b = true
+            <!VAL_REASSIGNMENT!>b<!> = true
         }
         use(b)
         continue

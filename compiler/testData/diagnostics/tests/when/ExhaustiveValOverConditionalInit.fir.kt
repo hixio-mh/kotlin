@@ -4,8 +4,8 @@ fun foo(a: Boolean, b: Boolean): Int {
         x = 1
     }
     when (b) {
-        true -> x = 2
-        false -> x = 3
+        true -> <!VAL_REASSIGNMENT!>x<!> = 2
+        false -> <!VAL_REASSIGNMENT!>x<!> = 3
     }
     return x
 }
@@ -16,7 +16,7 @@ fun bar(a: Boolean, b: Boolean): Int {
         x = 1
     }
     when (b) {
-        false -> x = 3
+        false -> <!VAL_REASSIGNMENT!>x<!> = 3
     }
     return <!UNINITIALIZED_VARIABLE!>x<!>
 }

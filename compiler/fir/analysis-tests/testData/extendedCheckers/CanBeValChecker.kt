@@ -105,9 +105,9 @@ fun foo() {
     <!CAN_BE_VAL!>var<!> <!VARIABLE_NEVER_READ!>a<!>: Int
     val bool = true
     if (bool) <!ASSIGNED_VALUE_IS_NEVER_READ!>a<!> = 4 else <!ASSIGNED_VALUE_IS_NEVER_READ!>a<!> = 42
-    val <!UNUSED_VARIABLE!>b<!>: String
+    val <!VARIABLE_NEVER_READ!>b<!>: String
 
-    <!ASSIGNED_VALUE_IS_NEVER_READ!>bool<!> = false
+    <!ASSIGNED_VALUE_IS_NEVER_READ!>b<!> = false
 }
 
 fun cycles() {
