@@ -13,6 +13,7 @@ import org.gradle.api.*
 import org.gradle.api.artifacts.maven.Conf2ScopeMappingContainer
 import org.gradle.api.artifacts.maven.MavenResolver
 import org.gradle.api.attributes.Usage
+import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.logging.Logging
@@ -998,19 +999,18 @@ abstract class AbstractAndroidProjectHandler(private val kotlinConfigurationTool
         processAndroidKotlinAndJavaSources(
             compilation,
             addKotlinSources = { kotlinSourceSet -> compilation.source(kotlinSourceSet) },
-            addJavaSources = { sources -> compilation.compileKotlinTaskProvider.configure { it.source(sources) } }
+            addJavaSources = { sources ->
+                compilation.compileKotlinTaskProvider.configure { it.source(sources.dir) }
+            }
         )
         wireKotlinTasks(project, compilation, androidPlugin, androidExt, variantData, javaTask, kotlinTask)
     }
 }
 
-private fun getAllJavaSources(variantData: BaseVariant): Iterable<File> =
-    variantData.getSourceFolders(SourceKind.JAVA).map { it.dir }
-
 internal fun processAndroidKotlinAndJavaSources(
     compilation: KotlinJvmAndroidCompilation,
     addKotlinSources: (KotlinSourceSet) -> Unit,
-    addJavaSources: (Iterable<File>) -> Unit
+    addJavaSources: (ConfigurableFileTree) -> Unit
 ) {
     val variantData = compilation.androidVariant
 
@@ -1019,7 +1019,7 @@ internal fun processAndroidKotlinAndJavaSources(
         addKotlinSources(kotlinSourceSet)
     }
 
-    addJavaSources(getAllJavaSources(variantData))
+    variantData.getSourceFolders(SourceKind.JAVA).forEach { addJavaSources(it) }
 }
 
 internal fun configureJavaTask(

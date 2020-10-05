@@ -117,7 +117,7 @@ internal fun addCompilationSourcesToExternalCompileTask(compilation: KotlinCompi
         processAndroidKotlinAndJavaSources(
             compilation,
             addKotlinSources = { sourceSet -> task.configure { it.source(sourceSet.kotlin) } },
-            addJavaSources = { sources -> task.configure { it.source(sources) }}
+            addJavaSources = { sources -> task.configure { it.source(sources.dir) }}
         )
     } else {
         task.configure { taskInstance ->
