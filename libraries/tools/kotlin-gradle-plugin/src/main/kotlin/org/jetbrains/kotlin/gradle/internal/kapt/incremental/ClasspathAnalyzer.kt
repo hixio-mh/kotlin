@@ -9,6 +9,8 @@ import org.gradle.api.artifacts.transform.InputArtifact
 import org.gradle.api.artifacts.transform.TransformAction
 import org.gradle.api.artifacts.transform.TransformOutputs
 import org.gradle.api.artifacts.transform.TransformParameters
+import org.gradle.api.file.FileSystemLocation
+import org.gradle.api.provider.Provider
 import org.jetbrains.org.objectweb.asm.ClassReader
 import org.jetbrains.org.objectweb.asm.ClassWriter
 import java.io.*
@@ -20,11 +22,11 @@ private const val MODULE_INFO = "module-info.class"
 
 abstract class StructureTransformAction : TransformAction<TransformParameters.None> {
     @get:InputArtifact
-    abstract val inputArtifact: File
+    abstract val inputArtifact: Provider<FileSystemLocation>
 
     override fun transform(outputs: TransformOutputs) {
         try {
-            val input = inputArtifact
+            val input = inputArtifact.get().asFile
 
             val data = if (input.isDirectory) {
                 visitDirectory(input)
