@@ -804,7 +804,15 @@ class ControlFlowGraphBuilder {
         levelCounter--
         val node = createTryMainBlockExitNode(tryExpression)
         popAndAddEdge(node)
-        addEdge(node, tryExitNodes.top())
+        // NB: If this block can escape, not needed to connect to the finally block.
+        val tryMainBlockEscaped = blockEscaped(node) { n -> n is TryMainBlockEnterNode && n.level == levelCounter }
+        val finallyEnterNode = finallyEnterNodes.topOrNull()
+        // NB: Check the level to avoid adding an edge to the finally block at an upper level.
+        if (!tryMainBlockEscaped && finallyEnterNode != null && finallyEnterNode.level == levelCounter + 1) {
+            addEdge(node, finallyEnterNode)
+        } else {
+            addEdge(node, tryExitNodes.top())
+        }
         return node
     }
 
@@ -816,7 +824,15 @@ class ControlFlowGraphBuilder {
         levelCounter--
         return createCatchClauseExitNode(catch).also {
             popAndAddEdge(it)
-            addEdge(it, tryExitNodes.top(), propagateDeadness = false)
+            // NB: If this block can escape, not needed to connect to the finally block.
+            val catchClauseEscaped = blockEscaped(it) { n -> n is CatchClauseEnterNode && n.level == levelCounter }
+            val finallyEnterNode = finallyEnterNodes.topOrNull()
+            // NB: Check the level to avoid adding an edge to the finally block at an upper level.
+            if (!catchClauseEscaped && finallyEnterNode != null && finallyEnterNode.level == levelCounter + 1) {
+                addEdge(it, finallyEnterNode, propagateDeadness = false)
+            } else {
+                addEdge(it, tryExitNodes.top(), propagateDeadness = false)
+            }
         }
     }
 
@@ -1219,6 +1235,40 @@ class ControlFlowGraphBuilder {
         return addNewSimpleNode(newNode, isDead)
     }
 
+    private fun lookup(
+        startNode: CFGNode<*>,
+        direction: (CFGNode<*>) -> List<CFGNode<*>>,
+        endCondition: (CFGNode<*>) -> Boolean = { n -> n == lastNodes.topOrNull() },
+        lookupCondition: (CFGNode<*>) -> Boolean,
+    ): List<CFGNode<*>> {
+        val result = mutableListOf<CFGNode<*>>()
+        val q = mutableListOf(startNode)
+        while (q.isNotEmpty()) {
+            val node = q.removeFirst()
+            if (lookupCondition.invoke(node)) {
+                result.add(node)
+            }
+            if (endCondition.invoke(node)) {
+                break
+            }
+            q.addAll(direction.invoke(node))
+        }
+        return result
+    }
+
+    private val forwardLookup: (CFGNode<*>) -> List<CFGNode<*>> = { n -> n.followingNodes }
+    private val backwardLookup: (CFGNode<*>) -> List<CFGNode<*>> = { n -> n.previousNodes }
+
+    private fun blockEscaped(
+        blockExitNode: CFGNode<*>,
+        blockStartCondition: (CFGNode<*>) -> Boolean
+    ): Boolean =
+        lookup(
+            blockExitNode,
+            backwardLookup,
+            blockStartCondition,
+            { n -> n is JumpNode },
+        ).isNotEmpty()
 }
 
 fun FirDeclaration?.isLocalClassOrAnonymousObject() = ((this as? FirRegularClass)?.isLocal == true) || this is FirAnonymousObject
