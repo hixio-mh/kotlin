@@ -86,6 +86,11 @@ class ControlFlowGraph(val declaration: FirDeclaration?, val name: String, val k
     }
 }
 
+data class Edge(
+    val kind: EdgeKind,
+    val label: String? = null
+)
+
 enum class EdgeKind(
     val usedInDfa: Boolean,
     val usedInCfa: Boolean,
@@ -113,7 +118,7 @@ private fun ControlFlowGraph.orderNodes(): LinkedHashSet<CFGNode<*>> {
     while (stack.isNotEmpty()) {
         val node = stack.removeFirst()
         val previousNodes = node.previousNodes
-        if (previousNodes.any { it !in visitedNodes && it.owner == this && !node.incomingEdges.getValue(it).isBack }) {
+        if (previousNodes.any { it !in visitedNodes && it.owner == this && !node.incomingEdges.getValue(it).kind.isBack }) {
             delayedNodes.add(node)
             stack.addLast(node)
             continue

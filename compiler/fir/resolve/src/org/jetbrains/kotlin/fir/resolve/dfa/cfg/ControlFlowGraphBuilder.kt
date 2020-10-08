@@ -24,6 +24,8 @@ import kotlin.random.Random
 @RequiresOptIn
 private annotation class CfgBuilderInternals
 
+private const val FINALLY_PREFIX = "onExceptionToFinallyBlock"
+
 class ControlFlowGraphBuilder {
     @CfgBuilderInternals
     private val graphs: Stack<ControlFlowGraph> = stackOf(ControlFlowGraph(null, "<TOP_LEVEL_GRAPH>", ControlFlowGraph.Kind.TopLevel))
@@ -777,7 +779,8 @@ class ControlFlowGraphBuilder {
         catchNodeStorages.push(NodeStorage())
         val enterTryExpressionNode = createTryExpressionEnterNode(tryExpression)
         addNewSimpleNode(enterTryExpressionNode)
-        tryExitNodes.push(createTryExpressionExitNode(tryExpression))
+        val tryExitNode = createTryExpressionExitNode(tryExpression)
+        tryExitNodes.push(tryExitNode)
         levelCounter++
         val enterTryNodeBlock = createTryMainBlockEnterNode(tryExpression)
         addNewSimpleNode(enterTryNodeBlock)
@@ -793,7 +796,7 @@ class ControlFlowGraphBuilder {
 
         if (tryExpression.finallyBlock != null) {
             val finallyEnterNode = createFinallyBlockEnterNode(tryExpression)
-            addEdge(enterTryNodeBlock, finallyEnterNode)
+            addEdge(enterTryNodeBlock, finallyEnterNode, label = "${FINALLY_PREFIX}_${tryExitNode.level}")
             finallyEnterNodes.push(finallyEnterNode)
         }
 
@@ -845,7 +848,9 @@ class ControlFlowGraphBuilder {
     fun exitFinallyBlock(tryExpression: FirTryExpression): FinallyBlockExitNode {
         return createFinallyBlockExitNode(tryExpression).also {
             popAndAddEdge(it)
-            addEdge(it, tryExitNodes.top())
+            val tryExitNode = tryExitNodes.top()
+            addEdge(it, tryExitNode)
+            addEdge(it, exitTargetsForTry.top(), label = "${FINALLY_PREFIX}_${tryExitNode.level}")
         }
     }
 
@@ -1197,20 +1202,22 @@ class ControlFlowGraphBuilder {
         propagateDeadness: Boolean = true,
         isDead: Boolean = false,
         isBack: Boolean = false,
-        preferredKind: EdgeKind = EdgeKind.Forward
+        preferredKind: EdgeKind = EdgeKind.Forward,
+        label: String? = null
     ) {
         val kind = if (isDead || from.isDead || to.isDead) {
             if (isBack) EdgeKind.DeadBackward else EdgeKind.DeadForward
         } else preferredKind
-        CFGNode.addEdge(from, to, kind, propagateDeadness)
+        CFGNode.addEdge(from, to, kind, propagateDeadness, label)
     }
 
     private fun addBackEdge(
         from: CFGNode<*>,
         to: CFGNode<*>,
-        isDead: Boolean = false
+        isDead: Boolean = false,
+        label: String? = null
     ) {
-        addEdge(from, to, propagateDeadness = false, isDead = isDead, isBack = true, preferredKind = EdgeKind.CfgBackward)
+        addEdge(from, to, propagateDeadness = false, isDead = isDead, isBack = true, preferredKind = EdgeKind.CfgBackward, label = label)
     }
 
     // ----------------------------------- Utils -----------------------------------
