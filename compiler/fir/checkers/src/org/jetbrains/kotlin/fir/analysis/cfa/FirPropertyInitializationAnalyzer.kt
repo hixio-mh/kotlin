@@ -22,7 +22,7 @@ object FirPropertyInitializationAnalyzer : AbstractFirPropertyInitializationChec
     override fun analyze(
         graph: ControlFlowGraph,
         reporter: DiagnosticReporter,
-        data: Map<CFGNode<*>, PropertyInitializationInfo>,
+        data: Map<CFGNode<*>, PathAwarePropertyInitializationInfo>,
         properties: Set<FirPropertySymbol>
     ) {
         val localData = data.filter {
@@ -37,7 +37,7 @@ object FirPropertyInitializationAnalyzer : AbstractFirPropertyInitializationChec
     }
 
     private class UninitializedPropertyReporter(
-        val data: Map<CFGNode<*>, PropertyInitializationInfo>,
+        val data: Map<CFGNode<*>, PathAwarePropertyInitializationInfo>,
         val localProperties: Set<FirPropertySymbol>,
         val reporter: DiagnosticReporter
     ) : ControlFlowGraphVisitorVoid() {
@@ -48,7 +48,20 @@ object FirPropertyInitializationAnalyzer : AbstractFirPropertyInitializationChec
             val symbol = reference.resolvedSymbol as? FirPropertySymbol ?: return
             if (symbol !in localProperties) return
             if (symbol.fir.isLateInit) return
-            val kind = data.getValue(node)[symbol] ?: EventOccurrencesRange.ZERO
+            val info = data.getValue(node)
+            if (info.containsKey(null)) {
+                // Check accumulated info at the normal path
+                investigate(info[null]!!, symbol, node)
+            } else {
+                // Otherwise, investigate all remaining paths
+                for (label in info.keys) {
+                    investigate(info[label]!!, symbol, node)
+                }
+            }
+        }
+
+        private fun investigate(info: PropertyInitializationInfo, symbol: FirPropertySymbol, node: QualifiedAccessNode) {
+            val kind = info[symbol] ?: EventOccurrencesRange.ZERO
             if (!kind.isDefinitelyVisited()) {
                 node.fir.source?.let {
                     reporter.report(FirErrors.UNINITIALIZED_VARIABLE.on(it, symbol))

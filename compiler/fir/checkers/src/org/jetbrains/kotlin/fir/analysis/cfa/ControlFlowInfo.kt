@@ -7,7 +7,7 @@ package org.jetbrains.kotlin.fir.analysis.cfa
 
 import kotlinx.collections.immutable.PersistentMap
 
-abstract class ControlFlowInfo<S : ControlFlowInfo<S, K, V>, K : Any, V : Any> protected constructor(
+abstract class ControlFlowInfo<S : ControlFlowInfo<S, K, V>, K : Any?, V : Any> protected constructor(
     protected val map: PersistentMap<K, V>,
 ) : PersistentMap<K, V> by map {
 
